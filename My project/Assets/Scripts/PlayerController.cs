@@ -5,6 +5,7 @@ using System.Threading;
 using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 using static UnityEngine.UI.Image;
 
 //COntrolls how the player character functions.
@@ -55,6 +56,13 @@ public class PlayerController : MonoBehaviour
 
     [Header("Animation")]
     [SerializeField] private Animator _animator; //Controls animation state
+
+    [Header("UI")]
+    [SerializeField] private HP_Bar _hpUI;
+    [SerializeField] private EndUI _endUI;
+    [SerializeField] private String _gameOverMessage;
+    [SerializeField] private String _victoryMessage;
+
     private enum AnimID //Used as a key for dictionary to intuitively get the animation hash
     {
         Jump,
@@ -85,6 +93,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float _HP;
     [SerializeField] private float knifeRange = 3.0f; //The range at which the enemy detects knife swings.
     [SerializeField] private LayerMask enemyLayer = 1 << 6; //Used to make raycasts that only detect guards.
+    private bool _isDead = false;
 
     public float HP { get => _HP; }
 
@@ -112,6 +121,8 @@ public class PlayerController : MonoBehaviour
     void Update()
     {
         MoveRelativeToCamera();
+        if (transform.position.z >= 0)
+            Victory();
     }
 
     private void OnEnable()
@@ -121,6 +132,7 @@ public class PlayerController : MonoBehaviour
         crouch.action.performed += OnCrouchPerformed;
         crouch.action.canceled += OnCrouchCanceled;
         jump.action.performed += OnJumpPerformed;
+        ExitCaller.OnPlayerExit += Victory;
     }
 
     private void OnDisable()
@@ -130,11 +142,14 @@ public class PlayerController : MonoBehaviour
         crouch.action.performed -= OnCrouchPerformed;
         crouch.action.canceled -= OnCrouchCanceled;
         jump.action.performed -= OnJumpPerformed;
+        ExitCaller.OnPlayerExit -= Victory;
     }
 
     //Controls player movement, including moving the camera and moving relative to the camera's positon
     void MoveRelativeToCamera()
     {
+        if(_isDead) return;
+
         moveDirection = move.action.ReadValue<Vector2>();
         lookDirection = look.action.ReadValue<Vector2>();
 
@@ -200,7 +215,7 @@ public class PlayerController : MonoBehaviour
 
     private void MakeMoveNoise(Vector3 move)
     {
-        if(!IsGrounded() || _sneak || move == Vector3.zero) { return; }
+        if(!IsGrounded() || _sneak || move == Vector3.zero ||_isDead) { return; }
 
         if(_currentMove > 1)
             NoiseHandler.InvokeNoise(NoiseHandler.NoiseID.Run, transform, _runNoiseRange);
@@ -211,6 +226,8 @@ public class PlayerController : MonoBehaviour
     //Executes when the "Clap" button is pressed and makes a noise
     private void OnClap(InputValue value)
     {
+        if (_isDead) return;
+
         Debug.Log("Clap!");
         NoiseHandler.InvokeNoise(NoiseHandler.NoiseID.Clap, this.transform, clapRange);
     }
@@ -218,6 +235,8 @@ public class PlayerController : MonoBehaviour
     //Used when the Knife button is pressed and processes the player's side of a melee attack. Vurrently only backstabs.
     private void OnKnife(InputValue value)
     {
+        if (_isDead) return;
+
         Debug.Log("Knife!");
 
         if(Physics.Raycast(this.transform.position, this.transform.forward,out RaycastHit hit, knifeRange, enemyLayer))
@@ -243,6 +262,8 @@ public class PlayerController : MonoBehaviour
 
     private void OnSprintPerformed(InputAction.CallbackContext ctx)
     {
+        if (_isDead) return;
+
         //Begin running by canceling sneaking
         _sneak = false;
         _animator.SetBool(_animHash[AnimID.Sneak], false); //Update sneak in animator.
@@ -254,12 +275,16 @@ public class PlayerController : MonoBehaviour
 
     private void OnSprintCanceled(InputAction.CallbackContext ctx)
     {
+        if (_isDead) return;
+
         //Decrease movespeed modifier.
-        if(_currentMove > 1)
+        if (_currentMove > 1)
             _currentMove = 1;
     }
     private void OnCrouchPerformed(InputAction.CallbackContext ctx)
     {
+        if (_isDead) return;
+
         //Begin running by sneaking
         _sneak = true;
         _animator.SetBool(_animHash[AnimID.Sneak], true); //Update sneak in animator.
@@ -271,6 +296,8 @@ public class PlayerController : MonoBehaviour
 
     private void OnCrouchCanceled(InputAction.CallbackContext ctx)
     {
+        if (_isDead) return;
+
         //Begin running by canceling sneak
         _sneak = false;
         _animator.SetBool(_animHash[AnimID.Sneak], false); //Update sneak in animator.
@@ -282,6 +309,8 @@ public class PlayerController : MonoBehaviour
 
     private void OnJumpPerformed(InputAction.CallbackContext ctx)
     {
+        if (_isDead) return;
+
         Debug.Log(IsGrounded());
         if (IsGrounded())
         {
@@ -292,7 +321,22 @@ public class PlayerController : MonoBehaviour
     //Function for taking damage
     public void Damage(float damage)
     {
+        if(_isDead) return;
+
         _HP -= damage;
+        _hpUI.SetHP(_HP, _maxHealth);
+
+        if (_HP <= 0)
+            Die();
+    }
+
+    public void Die()
+    {
+        if(_isDead) return;
+
+        Cursor.lockState = CursorLockMode.None;
+        _isDead = true;
+        _endUI.Show(false, _gameOverMessage);
     }
 
     bool IsGrounded()
@@ -302,6 +346,24 @@ public class PlayerController : MonoBehaviour
             groundRadius,
             groundMask
         );
+    }
+
+    public void Victory()
+    {
+        if(_isDead) return;
+
+        _animator.SetFloat(_animHash[AnimID.MoveSpeed], 0);
+        _animator.SetBool(_animHash[AnimID.Sneak], false);
+        Cursor.lockState = CursorLockMode.None;
+        _isDead = true;
+        _endUI.Show(true, _victoryMessage);
+    }
+
+    public void RestartScene()
+    {
+        // Get the currently active scene and reload it
+        Debug.Log("Resetting");
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
     private void ApplyJump()
