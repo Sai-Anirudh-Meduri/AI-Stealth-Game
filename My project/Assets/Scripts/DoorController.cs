@@ -24,7 +24,6 @@ public class DoorController : MonoBehaviour
     }
     void OnEnable()
     {
-        Debug.Log($"Door {_doorID} subscribing");
         KeyController.OnKeyPickup += OpenDoor;
     }
 

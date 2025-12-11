@@ -8,7 +8,10 @@ public class NoiseHandler : MonoBehaviour
     public enum NoiseID
     {
         Laser,
-        Clap
+        Clap,
+        Run,
+        Walk,
+        Landing
     }
 
     //Event construction for subscribing to listen for noises directly

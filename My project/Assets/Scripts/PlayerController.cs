@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
@@ -10,16 +11,40 @@ using static UnityEngine.UI.Image;
 public class PlayerController : MonoBehaviour
 {
     private PlayerInput playerInput; //Used to access the controls
-
+    
+    [Header("Move Settings")]
     public float moveSpeed = 5.0f; //How fast the player moves
+    private float _currentMove = 1f; //Runtime modifiers that change the player's movespeed.
     public float rotateSpeed = 100.0f; //How fast the player rotates
     private Vector2 moveDirection; //Two vectors for controling the camera and player movement
     private Vector2 lookDirection;
-    public InputActionReference move; //Three Input actions to allow access to parts of the control scheme. MUST be set in the inspector
+    private bool _sneak; //Is the player currently sneaking?
+
+    [Header("Jump Settings")]
+    [SerializeField] private float jumpHeight = 2f;   // How high the player jumps
+    [SerializeField] Transform groundCheckPoint; // empty GameObject at feet
+    [SerializeField] float groundRadius = 0.3f;
+    [SerializeField] LayerMask groundMask;
+    private Vector3 _jumpVector;
+    private bool _wasGrounded = true;
+
+    [Header("Noise Settings")]
+    [SerializeField] private bool _drawNoise = true;
+    [SerializeField] private float _runNoiseRange = 4f;
+    [SerializeField] private float _walkNoiseRange = 2f;
+    [SerializeField] private float _landingNoiseRange = 5f;
+    [SerializeField] private float clapRange = 10.0f; //The range at which enemies can hear the "clap" noise the player emits
+
+    [Header("Controls")]
+    public InputActionReference move; //Input actions to allow access to parts of the control scheme. MUST be set in the inspector
     public InputActionReference look;
     public InputActionReference attack;
+    public InputActionReference sprint;
+    public InputActionReference crouch;
+    public InputActionReference jump;
     public CharacterController characterController; //Allows the player to move using Unity prebuilt collision detection. MUST be set in the inspector
 
+    [Header("Camera Settings")]
     public bool controlCamera = true; //A debug option that turns off the camera controls for testing purposes
     public Camera cam; //Allows access to the main camera so the player can use it.
     public Transform camTarget; //An external target used to help adjust camera aim.
@@ -28,20 +53,33 @@ public class PlayerController : MonoBehaviour
     public float maxPitch = 60f;
     private float currentPitch = 0f;
 
+    [Header("Animation")]
+    [SerializeField] private Animator _animator; //Controls animation state
+    private enum AnimID //Used as a key for dictionary to intuitively get the animation hash
+    {
+        Jump,
+        Sneak,
+        MoveSpeed
+    }
+    private Dictionary<AnimID, int> _animHash = new (); //Holds hashes used to identify which animation a controller should switch to.
+
     //Combat variables
     [SerializeField] private float _maxHealth = 100;
     [SerializeField] private float _HP;
-    [SerializeField] private float clapRange = 10.0f; //The range at which enemies can hear the "clap" noise the player emits
     [SerializeField] private float knifeRange = 3.0f; //The range at which the enemy detects knife swings.
     [SerializeField] private LayerMask enemyLayer = 1 << 6; //Used to make raycasts that only detect guards.
+
     public float HP { get => _HP; }
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         playerInput = GetComponent<PlayerInput>();
-        playerInput.enabled = false;
-        StartCoroutine(activateControls());
+
+        _animator = GetComponent<Animator>();
+        _animHash.Add(AnimID.Sneak, Animator.StringToHash("Sneak"));
+        _animHash.Add(AnimID.MoveSpeed, Animator.StringToHash("MoveSpeed"));
+        _animHash.Add(AnimID.Jump, Animator.StringToHash("Jump"));
 
         Cursor.lockState = CursorLockMode.Locked;
         _HP = _maxHealth;
@@ -51,6 +89,24 @@ public class PlayerController : MonoBehaviour
     void Update()
     {
         MoveRelativeToCamera();
+    }
+
+    private void OnEnable()
+    {
+        sprint.action.performed += OnSprintPerformed;
+        sprint.action.canceled += OnSprintCanceled;
+        crouch.action.performed += OnCrouchPerformed;
+        crouch.action.canceled += OnCrouchCanceled;
+        jump.action.performed += OnJumpPerformed;
+    }
+
+    private void OnDisable()
+    {
+        sprint.action.performed -= OnSprintPerformed;
+        sprint.action.canceled -= OnSprintCanceled;
+        crouch.action.performed -= OnCrouchPerformed;
+        crouch.action.canceled -= OnCrouchCanceled;
+        jump.action.performed -= OnJumpPerformed;
     }
 
     //Controls player movement, including moving the camera and moving relative to the camera's positon
@@ -71,15 +127,40 @@ public class PlayerController : MonoBehaviour
 
         Vector3 relativeMove = relativeForward + relativeRight;
 
-        //animator.SetFloat(animID_running, relativeMove.magnitude);
+        MakeMoveNoise(relativeMove);
 
-        characterController.Move(relativeMove * Time.deltaTime * moveSpeed);
+        if(relativeMove.sqrMagnitude > 0f) 
+            _animator.SetFloat(_animHash[AnimID.MoveSpeed], _currentMove);
+        else 
+            _animator.SetFloat(_animHash[AnimID.MoveSpeed], 0);
 
         //if (moveDirection != Vector2.zero)
         //{
         //    Quaternion rotateTo = Quaternion.LookRotation(relativeMove, Vector3.up);
         //    transform.rotation = Quaternion.RotateTowards(transform.rotation, rotateTo, rotateSpeed * Time.deltaTime);
         //}
+        if (characterController.isGrounded)
+        {
+            if (_jumpVector.y < 0)
+                _jumpVector.y = -2f; // keep grounded
+
+        }
+        _jumpVector.y += Physics.gravity.y * Time.deltaTime;
+
+        relativeMove.y = _jumpVector.y;
+       
+        characterController.Move(relativeMove * Time.deltaTime * moveSpeed * _currentMove);
+
+        bool groundedNow = IsGrounded();
+
+        if (!_wasGrounded && groundedNow)
+        {
+            // Player just landed
+            JumpLandingNoise();
+        }
+
+        _wasGrounded = groundedNow;
+
         if (controlCamera)
         {
             float yaw = lookDirection.x * lookSpeed;
@@ -92,14 +173,16 @@ public class PlayerController : MonoBehaviour
             cam.transform.position = camTarget.position - camTarget.forward * 3f + Vector3.up * 1.5f; // Adjust distance/height
             cam.transform.LookAt(camTarget);
         }
-
     }
 
-    //Very stupid hack to make unity input actiosn behave. Basically toggles them back on after one frame. Used only on startup.
-    IEnumerator activateControls()
+    private void MakeMoveNoise(Vector3 move)
     {
-        yield return null;
-        playerInput.enabled = true;
+        if(!IsGrounded() || _sneak || move == Vector3.zero) { return; }
+
+        if(_currentMove > 1)
+            NoiseHandler.InvokeNoise(NoiseHandler.NoiseID.Run, transform, _runNoiseRange);
+        else
+            NoiseHandler.InvokeNoise(NoiseHandler.NoiseID.Walk, transform, _walkNoiseRange);
     }
 
     //Executes when the "Clap" button is pressed and makes a noise
@@ -135,9 +218,89 @@ public class PlayerController : MonoBehaviour
         Debug.DrawRay(this.transform.position, this.transform.forward * knifeRange, Color.red, 100f);
     }
 
+    private void OnSprintPerformed(InputAction.CallbackContext ctx)
+    {
+        //Begin running by canceling sneaking
+        _sneak = false;
+        _animator.SetBool(_animHash[AnimID.Sneak], false); //Update sneak in animator.
+
+        //Increase movement speed modifier
+        if(_currentMove < 2)
+            _currentMove = 2;
+    }
+
+    private void OnSprintCanceled(InputAction.CallbackContext ctx)
+    {
+        //Decrease movespeed modifier.
+        if(_currentMove > 1)
+            _currentMove = 1;
+    }
+    private void OnCrouchPerformed(InputAction.CallbackContext ctx)
+    {
+        //Begin running by sneaking
+        _sneak = true;
+        _animator.SetBool(_animHash[AnimID.Sneak], true); //Update sneak in animator.
+
+        //Decrease movement speed modifier
+        if(_currentMove > .5f)
+            _currentMove = .5f;
+    }
+
+    private void OnCrouchCanceled(InputAction.CallbackContext ctx)
+    {
+        //Begin running by canceling sneak
+        _sneak = false;
+        _animator.SetBool(_animHash[AnimID.Sneak], false); //Update sneak in animator.
+
+        //Increase movement speed modifier
+        if (_currentMove < 1)
+            _currentMove = 1;
+    }
+
+    private void OnJumpPerformed(InputAction.CallbackContext ctx)
+    {
+        Debug.Log(IsGrounded());
+        if (IsGrounded())
+        {
+            _animator.SetTrigger(_animHash[AnimID.Jump]);
+        }
+    }
+
     //Function for taking damage
     public void Damage(float damage)
     {
         _HP -= damage;
+    }
+
+    bool IsGrounded()
+    {
+        return Physics.CheckSphere(
+            groundCheckPoint.position,
+            groundRadius,
+            groundMask
+        );
+    }
+
+    private void ApplyJump()
+    {
+            _jumpVector.y = jumpHeight;
+    }
+
+    private void JumpLandingNoise()
+    {
+        NoiseHandler.InvokeNoise(NoiseHandler.NoiseID.Landing, transform, _landingNoiseRange);
+    }
+
+    private void OnDrawGizmos()
+    {
+        if (_drawNoise)
+        {
+            Gizmos.color = Color.green;
+            Gizmos.DrawWireSphere(transform.position, _walkNoiseRange);
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawWireSphere(transform.position, _runNoiseRange);
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireSphere(transform.position, _landingNoiseRange); 
+        }
     }
 }
