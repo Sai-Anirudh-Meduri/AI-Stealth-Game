@@ -1,0 +1,4 @@
+open Gate：Electric Gate by rickaldo09 -- https://freesound.org/s/327637/ -- License: Attribution NonCommercial 3.0
+gunshot： Short Gunshot.wav by JohanDeecke -- https://freesound.org/s/369528/ -- License: Attribution 3.0
+sword swing: Sword_Water01.wav by SonoFxAudio -- https://freesound.org/s/649359/ -- License: Attribution 4.0
+walking: mco_walk_h02.wav by Fantozzi -- https://freesound.org/s/166306/ -- License: Creative Commons 0
