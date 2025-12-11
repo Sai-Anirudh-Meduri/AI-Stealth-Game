@@ -11,7 +11,7 @@ using static UnityEngine.UI.Image;
 public class PlayerController : MonoBehaviour
 {
     private PlayerInput playerInput; //Used to access the controls
-    
+
     [Header("Move Settings")]
     public float moveSpeed = 5.0f; //How fast the player moves
     private float _currentMove = 1f; //Runtime modifiers that change the player's movespeed.
@@ -61,9 +61,26 @@ public class PlayerController : MonoBehaviour
         Sneak,
         MoveSpeed
     }
-    private Dictionary<AnimID, int> _animHash = new (); //Holds hashes used to identify which animation a controller should switch to.
+    private Dictionary<AnimID, int> _animHash = new(); //Holds hashes used to identify which animation a controller should switch to.
 
-    //Combat variables
+    private enum SoundID //Used as a key for dictionary to intuitively retrieve sound clips
+    {
+        Walk,
+        Sneak,
+        MoveSpeed
+    }
+    [System.Serializable]
+    private struct SoundEntry
+    {
+        public SoundID id;
+        public AudioClip clip;
+    }
+    [Header("Sound")]
+    [SerializeField] private List<SoundEntry> soundEntries;
+    private Dictionary<SoundID,AudioClip> _audioClips;
+    private AudioSource _audioPlayer;
+
+    [Header("Combat")]
     [SerializeField] private float _maxHealth = 100;
     [SerializeField] private float _HP;
     [SerializeField] private float knifeRange = 3.0f; //The range at which the enemy detects knife swings.
@@ -80,6 +97,12 @@ public class PlayerController : MonoBehaviour
         _animHash.Add(AnimID.Sneak, Animator.StringToHash("Sneak"));
         _animHash.Add(AnimID.MoveSpeed, Animator.StringToHash("MoveSpeed"));
         _animHash.Add(AnimID.Jump, Animator.StringToHash("Jump"));
+
+        _audioPlayer = GetComponent<AudioSource>();
+        _audioClips = new Dictionary<SoundID, AudioClip>();
+
+        foreach (var entry in soundEntries)
+            _audioClips[entry.id] = entry.clip;
 
         Cursor.lockState = CursorLockMode.Locked;
         _HP = _maxHealth;
@@ -284,6 +307,12 @@ public class PlayerController : MonoBehaviour
     private void ApplyJump()
     {
             _jumpVector.y = jumpHeight;
+    }
+
+    private void WalkNoise()
+    {
+        //if(!_audioPlayer.isPlaying)
+            _audioPlayer.PlayOneShot(_audioClips[SoundID.Walk]);
     }
 
     private void JumpLandingNoise()

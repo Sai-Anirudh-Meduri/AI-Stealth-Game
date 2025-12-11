@@ -6,6 +6,12 @@ public class DoorController : MonoBehaviour
     [SerializeField] private bool _open = false;
     [SerializeField] private float _openSpeed = 1.0f;
     [SerializeField] private int _doorID = 1;
+    private AudioSource _audioPlayer;
+
+    private void Start()
+    {
+        _audioPlayer = GetComponent<AudioSource>();
+    }
 
     // Update is called once per frame
     void Update()
@@ -35,5 +41,6 @@ public class DoorController : MonoBehaviour
     private void OpenDoor(int id)
     {
         if (id == _doorID) { _open = true; }
+        _audioPlayer.Play();
     }
 }
