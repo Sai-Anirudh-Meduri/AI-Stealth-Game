@@ -16,15 +16,10 @@ public class KnifedState : BaseState
     //Do this when entering the state (ie was stabbed). TODO: More complex behavior, just changes material as a test.
     public override void EnterState()
     {
-        _controller.Renderer.material = _controller.SkinMaterial[1];
+        //_controller.Renderer.material = _controller.SkinMaterial[1];
     }
 
     public override void ExitState()
-    {
-        return;
-    }
-
-    public override void InitializeSubState()
     {
         return;
     }

@@ -2,11 +2,10 @@ using UnityEngine;
 using UnityEngine.AI;
 
 //State for chasing the player
-public class SpawnPursuitState : BaseState
+public class SpawnPursuitState : PursuitState
 {
     Vector3 _returnPos;
     private EnemySpawnerController _spawner;
-    private float _nextRepathTime = 0;
 
     public SpawnPursuitState(EnemyStateMachineController controller, EnemyStateFactory factory, Vector3 pos, EnemySpawnerController spawner) :
         base(controller, factory)
@@ -32,50 +31,18 @@ public class SpawnPursuitState : BaseState
 
     public override void EnterState()
     {
-        _controller.MyState = EnemyStateType.SoloPursuit;
-        //We saw the player, and are moving to his last known location. Update accordingly
-        Vector3 offset = (Random.insideUnitSphere * 2f);
-        offset.y = 0;
-        _controller.Goal = _controller.Player.position + offset;
-        _controller.Agent.destination = _controller.Goal;
+        base.EnterState();
 
-        //For debug, go to new material
-        _controller.Renderer.material = _controller.SkinMaterial[3];
+        _controller.MyState = EnemyStateType.SpawnPursuit;
     }
 
     public override void ExitState()
     {
-        //Player lost, return to default goal on exit
-        _controller.Goal = _controller.Trans.position;
-    }
-
-    public override void InitializeSubState()
-    {
-        throw new System.NotImplementedException();
+        base.ExitState();
     }
 
     public override void UpdateState()
     {
-        //If we can still see the player, update the goal to their new position
-        if(_controller.playerVision())
-        {
-            Vector3 offset = (Random.insideUnitSphere * 2f);
-            offset.y = 0;
-            _controller.Goal = _controller.Player.position + offset;
-        }
-
-        if (Time.time >= _nextRepathTime)
-        {
-            _controller.Agent.SetDestination(_controller.Goal);
-            _nextRepathTime = Time.time + 0.2f; // 5 updates per second
-        }
-
-        if (!_controller.Agent.isOnNavMesh) { Debug.Log("I am not on mesh!"); }
-
-        //Check if we should switch (such as if we are close enough to attack)
-        CheckSwitchState();
-
-        Debug.DrawLine(_controller.Trans.position, _controller.Goal, Color.green);
-        Debug.DrawLine(_controller.Trans.position, _controller.Agent.destination, Color.red);
+        base.UpdateState();
     }
 }

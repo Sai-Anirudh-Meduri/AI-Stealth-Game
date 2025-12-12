@@ -57,19 +57,22 @@ public class PlayerController : MonoBehaviour
     [Header("Animation")]
     [SerializeField] private Animator _animator; //Controls animation state
 
+    private enum AnimID //Used as a key for dictionary to intuitively get the animation hash
+    {
+        Jump,
+        Sneak,
+        MoveSpeed,
+        Attack,
+        Die,
+        Death
+    }
+    private Dictionary<AnimID, int> _animHash = new(); //Holds hashes used to identify which animation a controller should switch to.
+
     [Header("UI")]
     [SerializeField] private HP_Bar _hpUI;
     [SerializeField] private EndUI _endUI;
     [SerializeField] private String _gameOverMessage;
     [SerializeField] private String _victoryMessage;
-
-    private enum AnimID //Used as a key for dictionary to intuitively get the animation hash
-    {
-        Jump,
-        Sneak,
-        MoveSpeed
-    }
-    private Dictionary<AnimID, int> _animHash = new(); //Holds hashes used to identify which animation a controller should switch to.
 
     private enum SoundID //Used as a key for dictionary to intuitively retrieve sound clips
     {
@@ -106,6 +109,9 @@ public class PlayerController : MonoBehaviour
         _animHash.Add(AnimID.Sneak, Animator.StringToHash("Sneak"));
         _animHash.Add(AnimID.MoveSpeed, Animator.StringToHash("MoveSpeed"));
         _animHash.Add(AnimID.Jump, Animator.StringToHash("Jump"));
+        _animHash.Add(AnimID.Attack, Animator.StringToHash("Attack"));
+        _animHash.Add(AnimID.Die, Animator.StringToHash("Die"));
+        _animHash.Add(AnimID.Death, Animator.StringToHash("Death"));
 
         _audioPlayer = GetComponent<AudioSource>();
         _audioClips = new Dictionary<SoundID, AudioClip>();
@@ -133,6 +139,7 @@ public class PlayerController : MonoBehaviour
         crouch.action.canceled += OnCrouchCanceled;
         jump.action.performed += OnJumpPerformed;
         ExitCaller.OnPlayerExit += Victory;
+        attack.action.performed += Attack;
     }
 
     private void OnDisable()
@@ -143,6 +150,7 @@ public class PlayerController : MonoBehaviour
         crouch.action.canceled -= OnCrouchCanceled;
         jump.action.performed -= OnJumpPerformed;
         ExitCaller.OnPlayerExit -= Victory;
+        attack.action.performed -= Attack;
     }
 
     //Controls player movement, including moving the camera and moving relative to the camera's positon
@@ -337,6 +345,8 @@ public class PlayerController : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
         _isDead = true;
         _endUI.Show(false, _gameOverMessage);
+        _animator.SetTrigger(_animHash[AnimID.Die]);
+        _animator.SetBool(_animHash[AnimID.Death], true);
     }
 
     bool IsGrounded()
@@ -364,6 +374,11 @@ public class PlayerController : MonoBehaviour
         // Get the currently active scene and reload it
         Debug.Log("Resetting");
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
+    private void Attack(InputAction.CallbackContext ctx)
+    {
+        _animator.SetTrigger(_animHash[AnimID.Attack]);
     }
 
     private void ApplyJump()

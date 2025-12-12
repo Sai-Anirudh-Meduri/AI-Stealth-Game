@@ -25,8 +25,6 @@ public class EnemySpawnerController : MonoBehaviour
 
     public void spawnEnemies(Vector3 playerPos)
     {
-        Debug.Log("Spawning enemies");
-        Debug.Log(activated);
         if (activated == 0 && _spawnPoints.Count > 0)
         {
             activated = _spawnPoints.Count;

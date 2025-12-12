@@ -33,23 +33,14 @@ public class EnemyStateFactory
         return new DeadState(_controller, this);
     }
 
-    public BaseState SoloPursuitState()
+    public BaseState PursuitState()
     {
-        return new SoloPursuitState(_controller, this);
+        return new PursuitState(_controller, this);
     }
 
-    public BaseState SoloAttackState()
+    public BaseState AttackState()
     {
-        return new SoloAttackState(_controller, this);
-    }
-    public BaseState FormationPursuitState(Transform leader, Vector3 formationOffset)
-    {
-        return new FormationPursuitState(_controller, this, leader, formationOffset);
-    }
-
-    public BaseState FormationAttackState(Transform leader, Vector3 formationOffset)
-    {
-        return new FormationAttackState(_controller, this, leader, formationOffset);
+        return new AttackState(_controller, this);
     }
 
     public BaseState SpawnPursuitState(Vector3 pos, EnemySpawnerController spawner)
