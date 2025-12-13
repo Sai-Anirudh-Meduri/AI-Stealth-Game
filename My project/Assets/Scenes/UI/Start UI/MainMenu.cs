@@ -5,7 +5,7 @@ public class MainMenu : MonoBehaviour
 {
     public void StartGame()
     {
-        SceneManager.LoadScene("AI Spawner Test");
+        SceneManager.LoadScene("Level");
         
     }
 
