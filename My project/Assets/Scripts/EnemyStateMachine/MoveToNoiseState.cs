@@ -36,7 +36,7 @@ public class MoveToNoiseState : BaseState, ICanBeDamaged
     //Called when the player knife hits the enemy from behind.
     public void getBackStabbed()
     {
-        this.SwitchState(_factory.KnifedState());
+        this.SwitchState(_factory.DieState());
     }
 
     public override void UpdateState()

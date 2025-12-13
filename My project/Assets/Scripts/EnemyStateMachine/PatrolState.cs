@@ -57,21 +57,15 @@ public class PatrolState : BaseState, ICanHear, ICanBeDamaged
 
     public void getBackStabbed()
     {
-        this.SwitchState(_factory.KnifedState());
+        this.SwitchState(_factory.DieState());
     }
 
     public void HearNoise(NoiseID id, Transform origin, double range)
     {
         if (Vector3.Distance(origin.position, _controller.Trans.position) <= range)
         {
-            Debug.Log("It was in Range");
             _controller.Goal = origin.position;
             this.SwitchState(_factory.MoveToNoise());
-        }
-        else
-        {
-            Debug.Log("It was out of range!");
-            Debug.Log(Vector3.Distance(origin.position, _controller.Trans.position));
         }
     }
 

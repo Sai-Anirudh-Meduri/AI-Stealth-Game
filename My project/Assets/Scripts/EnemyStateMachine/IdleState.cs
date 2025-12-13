@@ -60,6 +60,6 @@ public class IdleState : BaseState, ICanBeDamaged, ICanHear
     //React to being stabbed in the back.
     public void getBackStabbed()
     {
-        this.SwitchState(_factory.KnifedState());
+        this.SwitchState(_factory.DieState());
     }
 }

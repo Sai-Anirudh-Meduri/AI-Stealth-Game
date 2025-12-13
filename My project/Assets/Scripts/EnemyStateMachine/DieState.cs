@@ -1,11 +1,11 @@
 using UnityEngine;
 
 //Enter this state after being knifed in the back. Mostly handles animation logic before dying.
-public class KnifedState : BaseState
+public class DieState : BaseState
 {
     private float _deathTimer = 0f; //Tracks how long the player has befor dying.
     private float _deathDuration = 10f; //The cutoff time for when the player is declared dead.
-    public KnifedState(EnemyStateMachineController controller, EnemyStateFactory factory) : base(controller, factory)
+    public DieState(EnemyStateMachineController controller, EnemyStateFactory factory) : base(controller, factory)
     {
     }
     public override void CheckSwitchState()
@@ -17,6 +17,8 @@ public class KnifedState : BaseState
     public override void EnterState()
     {
         //_controller.Renderer.material = _controller.SkinMaterial[1];
+        _controller.Anim.SetTrigger(_controller.AnimHash[EnemyStateMachineController.AnimID.Dead]);
+        _controller.MyState = EnemyStateType.Dead;
     }
 
     public override void ExitState()

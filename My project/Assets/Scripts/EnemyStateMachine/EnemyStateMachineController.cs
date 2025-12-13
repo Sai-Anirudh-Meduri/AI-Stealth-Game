@@ -215,13 +215,10 @@ public class EnemyStateMachineController : MonoBehaviour
     //Public function to backstab the enemy. Respects whether the enemy can currently be stabbed (if they are dying for example, they cannot be stabbed)
     public void getBackstabbed()
     {
-        if(_currentState is ICanBeDamaged damaged)
-        {
-            damaged.getBackStabbed();
-        } else
-        {
-            return;
-        }
+        Debug.Log("DIE!");
+        _currentState.ExitState();
+        _currentState = StateFactory.DieState();
+        _currentState.EnterState();
     }
 
     public void StartShooting()
@@ -305,5 +302,15 @@ public class EnemyStateMachineController : MonoBehaviour
     public void destroySelf()
     {
         Destroy(gameObject);
+    }
+
+    public void Damage(int damage, bool backstab)
+    {
+        _HP -= damage;
+
+        if(backstab || _HP <= 0)
+        {
+            getBackstabbed();
+        }
     }
 }

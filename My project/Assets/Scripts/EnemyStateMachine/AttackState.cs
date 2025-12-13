@@ -1,7 +1,7 @@
 using UnityEngine;
 
 //State for shoot at the player. Enemy stops moving, aims, and shoots. Accuracy increases over time.
-public class AttackState : BaseState
+public class AttackState : BaseState, ICanBeDamaged
 {
     protected PursuitState _pursuit;
     private float _attackTimer;
@@ -63,5 +63,11 @@ public class AttackState : BaseState
         {
             _attackTimer -= Time.deltaTime;
         }
+    }
+
+    //React to being stabbed in the back.
+    public void getBackStabbed()
+    {
+        this.SwitchState(_factory.DieState());
     }
 }

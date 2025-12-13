@@ -24,9 +24,9 @@ public class EnemyStateFactory
     {
         return new MoveToNoiseState(_controller, this);
     }
-    public BaseState KnifedState()
+    public BaseState DieState()
     {
-        return new KnifedState(_controller, this);
+        return new DieState(_controller, this);
     }
     public BaseState DeadState()
     {
