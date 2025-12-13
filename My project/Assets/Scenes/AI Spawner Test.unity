@@ -2623,6 +2623,10 @@ PrefabInstance:
       propertyPath: _endUI
       value: 
       objectReference: {fileID: 1334315257}
+    - target: {fileID: 4953568556857113700, guid: 5c1d984a4ee298f4189902c8a3b98e6b, type: 3}
+      propertyPath: controlCamera
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 5379769129919177185, guid: 5c1d984a4ee298f4189902c8a3b98e6b, type: 3}
       propertyPath: m_Name
       value: Player
@@ -13738,7 +13742,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7390098997385665811, guid: 808136f6151b8c0449bacf10798ceccf, type: 3}
       propertyPath: _doorID
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
