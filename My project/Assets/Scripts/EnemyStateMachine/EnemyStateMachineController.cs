@@ -68,8 +68,7 @@ public class EnemyStateMachineController : MonoBehaviour
     public enum SoundID //Used as a key for dictionary to intuitively retrieve sound clips
     {
         Walk,
-        Sneak,
-        MoveSpeed
+        Gunshot
     }
     [System.Serializable]
     private struct SoundEntry
@@ -233,6 +232,7 @@ public class EnemyStateMachineController : MonoBehaviour
 
     public void Shoot()
     {
+        _audioPlayer.PlayOneShot(_audioClips[SoundID.Gunshot]);
         if (Random.value <= _attackAccuracy)
         {
             if(playerVision())
@@ -244,6 +244,11 @@ public class EnemyStateMachineController : MonoBehaviour
         {
             _attackAccuracy = 1.0f; //Accuracy cannot be greater than 100%
         }
+    }
+
+    public void WalkSound()
+    {
+        _audioPlayer.PlayOneShot(_audioClips[SoundID.Walk]);
     }
     
     //Draws debug information using Unity Gizmos

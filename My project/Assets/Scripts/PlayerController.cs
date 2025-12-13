@@ -430,6 +430,7 @@ public class PlayerController : MonoBehaviour
     {
         if (_isDead)
             { return; }
+        _audioPlayer.PlayOneShot(_audioClips[SoundID.Stab]);
         _animator.SetTrigger(_animHash[AnimID.Attack]);
     }
 

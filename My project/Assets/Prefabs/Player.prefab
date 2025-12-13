@@ -499,8 +499,8 @@ MonoBehaviour:
   soundEntries:
   - id: 0
     clip: {fileID: 8300000, guid: 1a971117e6f82f34793fd02d3d718108, type: 3}
-  - id: 0
-    clip: {fileID: 8300000, guid: 1a971117e6f82f34793fd02d3d718108, type: 3}
+  - id: 1
+    clip: {fileID: 8300000, guid: 5008eb9c39cf5f0489284826eae83468, type: 3}
   _maxHealth: 100
   _HP: 0
   knifeRange: 3
