@@ -10623,6 +10623,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 2134329555}
     m_Modifications:
+    - target: {fileID: 1817794839291965774, guid: cc121a47686718a4ea854e3f3ce58955, type: 3}
+      propertyPath: m_Radius
+      value: 0.25
+      objectReference: {fileID: 0}
     - target: {fileID: 2512337385845583822, guid: cc121a47686718a4ea854e3f3ce58955, type: 3}
       propertyPath: m_Name
       value: Guard
@@ -10666,6 +10670,18 @@ PrefabInstance:
     - target: {fileID: 2996667427765499252, guid: cc121a47686718a4ea854e3f3ce58955, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6959225414129195596, guid: cc121a47686718a4ea854e3f3ce58955, type: 3}
+      propertyPath: _patrolPoints.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 6959225414129195596, guid: cc121a47686718a4ea854e3f3ce58955, type: 3}
+      propertyPath: _patrolPoints.Array.data[2].x
+      value: -50
+      objectReference: {fileID: 0}
+    - target: {fileID: 6959225414129195596, guid: cc121a47686718a4ea854e3f3ce58955, type: 3}
+      propertyPath: _patrolPoints.Array.data[2].z
+      value: -167
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
