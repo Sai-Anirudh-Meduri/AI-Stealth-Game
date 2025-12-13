@@ -16,7 +16,7 @@ public class PatrolState : BaseState, ICanHear, ICanBeDamaged
         {
             //Player was seen, switch to pursuit
             AlertManager.instance.CallSpawner(_controller.Trans.position); //Gets backup by triggering the nearest spawner to spawn enemies already in pursuit.
-            this.SwitchState(_factory.SoloPursuitState());
+            this.SwitchState(_factory.PursuitState());
         }
     }
 
@@ -47,7 +47,7 @@ public class PatrolState : BaseState, ICanHear, ICanBeDamaged
         waitTimer = 0f;
 
         _controller.Agent.destination = _controller.patrolPoints[currentIndex];
-        _controller.Renderer.material = _controller.SkinMaterial[0];
+        //_controller.Renderer.material = _controller.SkinMaterial[0];
     }
 
     public override void ExitState()
@@ -57,29 +57,16 @@ public class PatrolState : BaseState, ICanHear, ICanBeDamaged
 
     public void getBackStabbed()
     {
-        this.SwitchState(_factory.KnifedState());
+        this.SwitchState(_factory.DieState());
     }
 
     public void HearNoise(NoiseID id, Transform origin, double range)
     {
-        Debug.Log("I heard a noise!");
-
         if (Vector3.Distance(origin.position, _controller.Trans.position) <= range)
         {
-            Debug.Log("It was in Range");
             _controller.Goal = origin.position;
             this.SwitchState(_factory.MoveToNoise());
         }
-        else
-        {
-            Debug.Log("It was out of range!");
-            Debug.Log(Vector3.Distance(origin.position, _controller.Trans.position));
-        }
-    }
-
-    public override void InitializeSubState()
-    {
-
     }
 
     public override void UpdateState()
@@ -100,6 +87,9 @@ public class PatrolState : BaseState, ICanHear, ICanBeDamaged
         }
 
         CheckSwitchState();
+
+        _controller.Anim.SetFloat(_controller.AnimHash[EnemyStateMachineController.AnimID.Speed],
+                                  _controller.Agent.velocity.magnitude / _controller.Agent.speed);
     }
 
 }

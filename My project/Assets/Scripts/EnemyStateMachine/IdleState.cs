@@ -15,7 +15,7 @@ public class IdleState : BaseState, ICanBeDamaged, ICanHear
         {
             //Player was seen, switch to pursuit
             AlertManager.instance.CallSpawner(_controller.Trans.position); //Gets backup by triggering the nearest spawner to spawn enemies already in pursuit.
-            this.SwitchState(_factory.SoloPursuitState());
+            this.SwitchState(_factory.PursuitState());
         }
     }
 
@@ -24,15 +24,12 @@ public class IdleState : BaseState, ICanBeDamaged, ICanHear
     {
         _controller.MyState = EnemyStateType.Idle;
         _controller.Agent.destination = _controller.Trans.position;
-        _controller.Renderer.material = _controller.SkinMaterial[0];
+        _controller.Anim.SetFloat(_controller.AnimHash[EnemyStateMachineController.AnimID.Speed],
+                                  _controller.Agent.velocity.magnitude / _controller.Agent.speed);
+        //_controller.Renderer.material = _controller.SkinMaterial[0];
     }
 
     public override void ExitState()
-    {
-
-    }
-
-    public override void InitializeSubState()
     {
 
     }
@@ -63,6 +60,6 @@ public class IdleState : BaseState, ICanBeDamaged, ICanHear
     //React to being stabbed in the back.
     public void getBackStabbed()
     {
-        this.SwitchState(_factory.KnifedState());
+        this.SwitchState(_factory.DieState());
     }
 }

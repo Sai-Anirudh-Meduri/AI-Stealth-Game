@@ -6,7 +6,10 @@ using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
+using UnityEngine.UIElements;
+using static UnityEngine.EventSystems.EventTrigger;
 using static UnityEngine.UI.Image;
+using Cursor = UnityEngine.Cursor;
 
 //COntrolls how the player character functions.
 public class PlayerController : MonoBehaviour
@@ -57,25 +60,27 @@ public class PlayerController : MonoBehaviour
     [Header("Animation")]
     [SerializeField] private Animator _animator; //Controls animation state
 
+    private enum AnimID //Used as a key for dictionary to intuitively get the animation hash
+    {
+        Jump,
+        Sneak,
+        MoveSpeed,
+        Attack,
+        Die,
+        Death
+    }
+    private Dictionary<AnimID, int> _animHash = new(); //Holds hashes used to identify which animation a controller should switch to.
+
     [Header("UI")]
     [SerializeField] private HP_Bar _hpUI;
     [SerializeField] private EndUI _endUI;
     [SerializeField] private String _gameOverMessage;
     [SerializeField] private String _victoryMessage;
 
-    private enum AnimID //Used as a key for dictionary to intuitively get the animation hash
-    {
-        Jump,
-        Sneak,
-        MoveSpeed
-    }
-    private Dictionary<AnimID, int> _animHash = new(); //Holds hashes used to identify which animation a controller should switch to.
-
     private enum SoundID //Used as a key for dictionary to intuitively retrieve sound clips
     {
         Walk,
-        Sneak,
-        MoveSpeed
+        Stab
     }
     [System.Serializable]
     private struct SoundEntry
@@ -92,6 +97,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float _maxHealth = 100;
     [SerializeField] private float _HP;
     [SerializeField] private float knifeRange = 3.0f; //The range at which the enemy detects knife swings.
+    [SerializeField] private Transform knife;
     [SerializeField] private LayerMask enemyLayer = 1 << 6; //Used to make raycasts that only detect guards.
     private bool _isDead = false;
 
@@ -106,6 +112,9 @@ public class PlayerController : MonoBehaviour
         _animHash.Add(AnimID.Sneak, Animator.StringToHash("Sneak"));
         _animHash.Add(AnimID.MoveSpeed, Animator.StringToHash("MoveSpeed"));
         _animHash.Add(AnimID.Jump, Animator.StringToHash("Jump"));
+        _animHash.Add(AnimID.Attack, Animator.StringToHash("Attack"));
+        _animHash.Add(AnimID.Die, Animator.StringToHash("Die"));
+        _animHash.Add(AnimID.Death, Animator.StringToHash("Death"));
 
         _audioPlayer = GetComponent<AudioSource>();
         _audioClips = new Dictionary<SoundID, AudioClip>();
@@ -133,6 +142,7 @@ public class PlayerController : MonoBehaviour
         crouch.action.canceled += OnCrouchCanceled;
         jump.action.performed += OnJumpPerformed;
         ExitCaller.OnPlayerExit += Victory;
+        attack.action.performed += Attack;
     }
 
     private void OnDisable()
@@ -143,6 +153,7 @@ public class PlayerController : MonoBehaviour
         crouch.action.canceled -= OnCrouchCanceled;
         jump.action.performed -= OnJumpPerformed;
         ExitCaller.OnPlayerExit -= Victory;
+        attack.action.performed -= Attack;
     }
 
     //Controls player movement, including moving the camera and moving relative to the camera's positon
@@ -233,7 +244,7 @@ public class PlayerController : MonoBehaviour
     }
 
     //Used when the Knife button is pressed and processes the player's side of a melee attack. Vurrently only backstabs.
-    private void OnKnife(InputValue value)
+    /*private void OnKnife(InputValue value)
     {
         if (_isDead) return;
 
@@ -258,7 +269,7 @@ public class PlayerController : MonoBehaviour
         }
         // Draw ray in Scene view
         Debug.DrawRay(this.transform.position, this.transform.forward * knifeRange, Color.red, 100f);
-    }
+    }*/
 
     private void OnSprintPerformed(InputAction.CallbackContext ctx)
     {
@@ -337,6 +348,8 @@ public class PlayerController : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
         _isDead = true;
         _endUI.Show(false, _gameOverMessage);
+        _animator.SetTrigger(_animHash[AnimID.Die]);
+        _animator.SetBool(_animHash[AnimID.Death], true);
     }
 
     bool IsGrounded()
@@ -359,11 +372,65 @@ public class PlayerController : MonoBehaviour
         _endUI.Show(true, _victoryMessage);
     }
 
+    public void AttackTrigger()
+    {
+        // 1. Find all enemies within knifeRange
+        Collider[] hits = Physics.OverlapSphere(knife.position, knifeRange, enemyLayer);
+        EnemyStateMachineController closestEnemy = null;
+        float minDistance = float.MaxValue;
+
+        foreach (var col in hits)
+        {
+            var enemy = col.GetComponent<EnemyStateMachineController>();
+            if (enemy == null || enemy.MyState == EnemyStateType.Dead)
+                continue;
+
+            // 2. Raycast from knife tip to enemy to check if walls block
+            Vector3 dir = (enemy.Trans.position - knife.position).normalized;
+            float distance = Vector3.Distance(knife.position, enemy.Trans.position);
+
+            if (Physics.Raycast(knife.position, dir, out RaycastHit hit, knifeRange))
+            {
+                if (hit.collider.GetComponent<EnemyStateMachineController>() != enemy)
+                {
+                    // Something else (like wall) is blocking
+                    continue;
+                }
+
+                // 3. Choose nearest enemy along the ray
+                if (distance < minDistance)
+                {
+                    minDistance = distance;
+                    closestEnemy = enemy;
+                }
+            }
+        }
+
+        // 4. Apply damage to the closest valid enemy
+        if (closestEnemy != null)
+        {
+            Vector3 toKnife = (transform.position - closestEnemy.Trans.position).normalized;
+            float dot = Vector3.Dot(closestEnemy.Trans.forward, toKnife);
+
+            bool isBackstab = dot < 0f;
+            closestEnemy.Damage(10, isBackstab);
+
+            Debug.Log($"{closestEnemy.name} hit! Backstab: {isBackstab}");
+        }
+    }
+
     public void RestartScene()
     {
         // Get the currently active scene and reload it
         Debug.Log("Resetting");
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
+    private void Attack(InputAction.CallbackContext ctx)
+    {
+        if (_isDead)
+            { return; }
+        _animator.SetTrigger(_animHash[AnimID.Attack]);
     }
 
     private void ApplyJump()

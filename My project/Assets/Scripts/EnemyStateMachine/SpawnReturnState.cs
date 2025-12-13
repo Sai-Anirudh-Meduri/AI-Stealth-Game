@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEngine.AI;
 
-//State for shoot at the player. Enemy stops moving, aims, and shoots. Accuracy increases over time.
 public class SpawnReturnState : BaseState
 {
     private Vector3 _returnPos;
@@ -29,21 +28,18 @@ public class SpawnReturnState : BaseState
         _controller.Goal = _returnPos;
         _controller.Agent.destination = _controller.Goal; //Go back to the return position
         //For debug, go to new material
-        _controller.Renderer.material = _controller.SkinMaterial[2];
+        //_controller.Renderer.material = _controller.SkinMaterial[2];
     }
 
     public override void ExitState()
     {
     }
 
-    public override void InitializeSubState()
-    {
-        throw new System.NotImplementedException();
-    }
-
     public override void UpdateState()
     {
         CheckSwitchState();
+        _controller.Anim.SetFloat(_controller.AnimHash[EnemyStateMachineController.AnimID.Speed],
+                                  _controller.Agent.velocity.magnitude / _controller.Agent.speed);
 
         //When we reach the destination, destroy this enemy object
         if (!_controller.Agent.pathPending &&
@@ -53,8 +49,5 @@ public class SpawnReturnState : BaseState
             _spawner.activated--;
             _controller.destroySelf();
         }
-
-        Debug.DrawLine(_controller.Trans.position, _controller.Goal, Color.green);
-        Debug.DrawLine(_controller.Trans.position, _controller.Agent.destination, Color.red);
     }
 }

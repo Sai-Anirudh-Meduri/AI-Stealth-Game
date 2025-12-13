@@ -14,7 +14,7 @@ public class MoveToNoiseState : BaseState, ICanBeDamaged
         {
             //Player was seen, switch to pursuit
             AlertManager.instance.CallSpawner(_controller.Trans.position); //Gets backup by triggering the nearest spawner to spawn enemies already in pursuit.
-            this.SwitchState(_factory.SoloPursuitState());
+            this.SwitchState(_factory.PursuitState());
         }
     }
 
@@ -36,16 +36,13 @@ public class MoveToNoiseState : BaseState, ICanBeDamaged
     //Called when the player knife hits the enemy from behind.
     public void getBackStabbed()
     {
-        this.SwitchState(_factory.KnifedState());
-    }
-
-    public override void InitializeSubState()
-    {
-
+        this.SwitchState(_factory.DieState());
     }
 
     public override void UpdateState()
     {
         CheckSwitchState();
+        _controller.Anim.SetFloat(_controller.AnimHash[EnemyStateMachineController.AnimID.Speed],
+                                  _controller.Agent.velocity.magnitude / _controller.Agent.speed);
     }
 }

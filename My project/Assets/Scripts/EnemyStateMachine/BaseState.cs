@@ -26,9 +26,6 @@ public abstract class BaseState
     //Can be used if the state has internal logic for when it might switch to another state
     public abstract void CheckSwitchState();
 
-    //EXPIRIMENTAL: Mostly does nothign right now, still trying to figure out substates.
-    public abstract void InitializeSubState();
-
     //NOT ABSTRACT. This is the basic logic used to switch from any given state to another state.
     protected void SwitchState(BaseState newState)
     {
